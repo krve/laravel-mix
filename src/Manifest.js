@@ -1,5 +1,6 @@
 let objectValues = require('lodash').values;
 let without = require('lodash').without;
+let object = require('lodash/fp/object');
 
 let path = require('path');
 
@@ -78,7 +79,19 @@ class Manifest {
      * Refresh the mix-manifest.js file.
      */
     refresh() {
-        File.find(this.path()).makeDirectories().write(this.manifest);
+        let manifest = this.manifest;
+
+        if (this.exists()) {
+            manifest = object.mergeWith(manifest, this.read(), (objValue, srcValue) => {
+                if (/\?id=/.test(objValue)) {
+                    return objValue;
+                }
+
+                return srcValue;
+            });
+        }
+
+        File.find(this.path()).makeDirectories().write(manifest);
     }
 
 
@@ -130,6 +143,13 @@ class Manifest {
         }
 
         return filePath;
+    }
+
+    /**
+     * Determine if the manifest file exists.
+     */
+    exists() {
+        return File.exists(this.path());
     }
 }
 
